@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routers.tutor_router import router as tutor_router
+from routes.tutor import router as tutor_router
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="ConvoLearn API")
 

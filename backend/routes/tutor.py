@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket
-from backend.services.tutor import handle_tutor_session
+from services.tutor import handle_tutor_session
 
 router = APIRouter()
 

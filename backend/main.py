@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="ConvoLearn API")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,

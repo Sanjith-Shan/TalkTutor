@@ -9,7 +9,7 @@ function App() {
   const wsRef = useRef<WebSocket | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const mediaStreamRef = useRef<MediaStream | null>(null)
-  const processorRef = useRef<ScriptProcessorNode | null>(null)
+  const processorRef = useRef<AudioWorkletNode | null>(null)
   const audioQueueRef = useRef<Int16Array[]>([])
   const isPlayingRef = useRef(false)
   const currentAIMessageRef = useRef<number>(-1)
@@ -163,16 +163,21 @@ function App() {
   }
 
   const addTranscript = (text: string, type: 'user' | 'ai') => {
-    setTranscript(prev => [...prev, text])
-    if (type === 'ai') {
-      currentAIMessageRef.current = transcript.length
-    }
+    setTranscript(prev => {
+      const newTranscript = [...prev, text]
+      if (type === 'ai') {
+        currentAIMessageRef.current = newTranscript.length - 1
+      }
+      return newTranscript
+    })
   }
 
   const updateAITranscript = (delta: string) => {
     if (currentAIMessageRef.current === -1) {
+      // Start new AI message
       addTranscript('AI: ' + delta, 'ai')
     } else {
+      // Append to current AI message
       setTranscript(prev => {
         const newTranscript = [...prev]
         newTranscript[currentAIMessageRef.current] += delta
@@ -236,8 +241,8 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1 className="app-title">ConvoLearn</h1>
-      <p className="app-subtitle">Your AI-powered voice tutor</p>
+      <h1 className="app-title">TalkTutor</h1>
+      <p className="app-subtitle">Student Learning Hub Prototype</p>
       
       <button 
         onClick={isConnected ? stopTutor : startTutor}
@@ -251,11 +256,11 @@ function App() {
       </div>
 
       <div className="transcript-container">
-        <h3 className="transcript-title">Conversation:</h3>
+        <h3 className="transcript-title">Transcript:</h3>
         
         {transcript.length === 0 ? (
           <p className="transcript-empty">
-            Your conversation will appear here...
+            Conversation will appear here...
           </p>
         ) : (
           transcript.map((line, index) => (

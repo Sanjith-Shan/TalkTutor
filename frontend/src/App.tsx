@@ -14,6 +14,7 @@ function App() {
   const isPlayingRef = useRef(false)
   const currentAIMessageRef = useRef<number>(-1)
 
+  // Starts session
   const startTutor = async () => {
     try {
       console.log('Starting tutor session...')
@@ -48,6 +49,7 @@ function App() {
         const audioContext = audioContextRef.current!
         const source = audioContext.createMediaStreamSource(stream)
         
+        // Audio worklet module to process input
         await audioContext.audioWorklet.addModule(
           'data:text/javascript,' + encodeURIComponent(`
             class AudioProcessor extends AudioWorkletProcessor {
@@ -66,15 +68,18 @@ function App() {
         
         const workletNode = new AudioWorkletNode(audioContext, 'audio-processor')
         
+        // Process audio
         workletNode.port.onmessage = (event) => {
           const float32Data = event.data
           const int16Data = new Int16Array(float32Data.length)
           
+          // Convert float32 to int16
           for (let i = 0; i < float32Data.length; i++) {
             const s = Math.max(-1, Math.min(1, float32Data[i]))
             int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
           }
           
+          // Convert to base64
           const bytes = new Uint8Array(int16Data.buffer)
           let binary = ''
           for (let i = 0; i < bytes.length; i++) {
@@ -90,11 +95,13 @@ function App() {
           }
         }
         
+        // Conn audio nodes
         source.connect(workletNode)
         workletNode.connect(audioContext.destination)
         processorRef.current = workletNode as any
       }
       
+      // Handle inc messages from server
       ws.onmessage = (event) => {
         const message = JSON.parse(event.data)
         
@@ -119,11 +126,13 @@ function App() {
         }
       }
       
+      // Handle WS errors
       ws.onerror = (error) => {
         console.error('WebSocket error:', error)
         setStatus('Connection error')
       }
       
+      // Handle WS conn closed
       ws.onclose = (event) => {
         console.log('WebSocket closed:', event.code, event.reason)
         setIsConnected(false)
@@ -162,6 +171,7 @@ function App() {
     setStatus('Session ended')
   }
 
+  // Add new msg to the transcript
   const addTranscript = (text: string, type: 'user' | 'ai') => {
     setTranscript(prev => {
       const newTranscript = [...prev, text]
@@ -172,12 +182,11 @@ function App() {
     })
   }
 
+  // Update current AI msg with streaming text
   const updateAITranscript = (delta: string) => {
     if (currentAIMessageRef.current === -1) {
-      // Start new AI message
       addTranscript('AI: ' + delta, 'ai')
     } else {
-      // Append to current AI message
       setTranscript(prev => {
         const newTranscript = [...prev]
         newTranscript[currentAIMessageRef.current] += delta
@@ -207,6 +216,7 @@ function App() {
     }
   }
 
+  // Play next audio chunk in queue
   const playNextInQueue = () => {
     if (audioQueueRef.current.length === 0) {
       isPlayingRef.current = false
@@ -218,11 +228,13 @@ function App() {
     
     if (!audioContextRef.current) return
 
+    // Convert int16 to float32
     const float32Array = new Float32Array(int16Array.length)
     for (let i = 0; i < int16Array.length; i++) {
       float32Array[i] = int16Array[i] / 32768.0
     }
 
+    // Play audio
     const audioBuffer = audioContextRef.current.createBuffer(1, float32Array.length, 24000)
     audioBuffer.getChannelData(0).set(float32Array)
 
